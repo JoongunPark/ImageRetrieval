@@ -287,16 +287,12 @@ class vgg16:
 #            sess.run(self.parameters[i].assign(weights[k]))
 
         saver = tf.train.Saver()
-        saver.restore(sess, "fine-tunning-suffler_0000061.ckpt")
+        saver.restore(sess, "fine-tunning-suffler_0000045.ckpt")
 
 	print ('Load complete.')
 
 
     def trainning(self):
-
-        weight = open('attr_file.txt', 'r')
-	attr_weight = [float(i) for i in weight.readline().split()[1:1000]]
-	weight.close()
 
         #train step
         #cross_entropy = -tf.reduce_sum(category_*tf.log(self.probs_category))
@@ -319,10 +315,8 @@ class vgg16:
 
     def trainImage(self, sess, batch1, batch2, batch3):
 
-#	batch_imgs = np.reshape(batch1, (-1, 224, 224, 3))
-#	batch_category = np.reshape(batch2, (-1, 50))
-#	batch_attribute = np.reshape(batch3, (-1, 1000))
-        self.train_step.run(session=sess, feed_dict={vgg.imgs: batch1 ,category_: batch2, attribute_: batch3}) 
+        self.train_step.run(session=sess,feed_dict={vgg.imgs: batch1,category_:batch2, attribute_:batch3}) 
+        
 
     def evalImage(self, sess, img, category_label, attribute_label):
         loss = self.loss.eval(session=sess, feed_dict={vgg.imgs: [img1],category_:category_label, attribute_:attribute_label})
@@ -331,7 +325,9 @@ class vgg16:
 
 
 if __name__ == '__main__':
+
     sess = tf.Session()
+
     imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
     category_ = tf.placeholder(tf.float32, [None, 50])
     attribute_ = tf.placeholder(tf.float32, [None, 1000])
@@ -345,42 +341,18 @@ if __name__ == '__main__':
 #
 #    res = np.zeros((1, 4096))
 
-    suffler = 0#-1 
-
-    for e in range(2,100):
-
-	suffler += 1
-	suffler %= 20 	
+    for e in range(0,8):
 
         list_eval = open('deepfashion/list_eval_partition.txt', 'r')
-        category = open('deepfashion/list_category_img.txt', 'r')
-        attribute = open('deepfashion/list_attr_img.txt', 'r')
+        suffled = open('deepfashion/suffled.txt', 'r')
     
         num_images = int(list_eval.readline().strip())
         list_eval.readline()
     
-        category.readline()
-        category.readline()
-        attribute.readline()
-        attribute.readline()
-    
-    #    f = open('query_features', 'w')
-    #    f.write("256 4096\n")
-    #    features = []
-    #    datalist = sorted(datalist)
-	batch = [[],[],[]]
-	batch_counter = 0
 
-#    	parsed_eval = list_eval.readline().split()
-#        parsed_category = category.readline().split()
-#        parsed_attribute = attribute.readline().split()
-#
-	train_counter = 0
         for index in range(0,num_images):
     
-    		parsed_eval = list_eval.readline().split()
-        	parsed_category = category.readline().split()
-        	parsed_attribute = attribute.readline().split()
+    		parsed_eval = suffled.readline().split()
     	
     		try:	
     		    filename = parsed_eval[0]
@@ -390,11 +362,7 @@ if __name__ == '__main__':
     
     		if imtype=="train":
 		    
-		    train_counter+=1
-		    if train_counter % 20 != suffler:
-		        continue
-
-		    print index
+                    print index
 
     		    img1 = Image.open(filename)
              	    img1 = img1.resize((224,224), Image.BILINEAR)
@@ -402,41 +370,10 @@ if __name__ == '__main__':
         	    img1 = np.array(img1.getdata()).reshape(img1.size[0], img1.size[1], 3)
     
     		    a = [0] * 50
-    		    a[int(parsed_category[1])-1] = 1
-    		
-#		    batch[0].append([img1])
-#		    batch[1].append([a])	
-#		    batch[2].append(parsed_attribute[1:1001])
-#
-                    vgg.trainImage(sess, [img1], [a], [parsed_attribute[1:1001]])
-#                    vgg.evalImage(sess, img1, [a], [parsed_attribute[1:1001]])
-		    
-    #		    category_array = np.zeros((1, 50))   				 
-    #		    attribute_arrary = np.array(parsed_attribute[1:1001])
-    
-    
-    #                else:
-    #		    img1 = Image.open(filename)
-    #         	    img1 = img1.resize((224,224), Image.BILINEAR)
-    #    		    # Convert Image object to ndarray
-    #    		    img1 = np.array(img1.getdata()).reshape(img1.size[0], img1.size[1], 3)
-    #
-    #		    a = [0] * 50
-    #		    a[int(parsed_category[1])-1] = 1
-    #
-    #                    vgg.evalImage(sess, img1, [a], [parsed_attribute[1:1001]])
-    #	
-    #		try:
-    #			img1.load()
-    #		except IOError as e:
-    #			print e
-    		
-    		 
-    
-    #		train_accuracy = accuracy.eval(feed_dict={vgg.imgs: [img1],y_:batch[1],keep_prob:1.0}) 
-    #		print "step %d, training accuracy %g" % (i,train_accuracy) 
-    
-    #		# Extract image descriptor in layer fc2/Relu. If you want, change fc2 to fc1
+    		    a[int(parsed_eval[2])-1] = 1
+                    vgg.trainImage(sess, [img1], [a], [parsed_eval[3:1003]])
+#    	        else:	
+#                    vgg.evalImage(sess, [img1], [a], [parsed_eval[3:1003]])
     #		layer = sess.graph.get_tensor_by_name('fc2/Relu:0')
     #		layer2 = sess.graph.get_tensor_by_name('fc3/Relu:0')
     #
@@ -456,10 +393,11 @@ if __name__ == '__main__':
     #		for i in feat:
     #			f.write(str(i))
     #		f.write("\n")
-        list_eval.close()
-	category.close()
-	attribute.close()
+                if index % 20000 == 0:
+                    saver = tf.train.Saver() 
+                    save_path = saver.save(sess, "./suffled/fine-tuning_4_"+str(index/20000)+".ckpt")
 
         saver = tf.train.Saver() 
-        save_path = saver.save(sess, "./fine-tunning-suffler_000004"+str(e)+".ckpt")
-	print str(e), "is done"
+        save_path = saver.save(sess, "./suffled/fine-tuning_4_"+str(index/20000)+".ckpt")
+        list_eval.close()
+        suffled.close()
