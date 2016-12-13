@@ -287,7 +287,7 @@ class vgg16:
 #            sess.run(self.parameters[i].assign(weights[k]))
 
         saver = tf.train.Saver()
-        saver.restore(sess, "fine-tunning-suffler_0000045.ckpt")
+        saver.restore(sess, "fine-tuning_4_4.ckpt")
 
 	print ('Load complete.')
 
@@ -308,7 +308,7 @@ class vgg16:
 	self.loss = tf.add(cross_entropy, cross_entropy2) 
 	#self.loss = cross_entropy	
 
-        self.train_step = tf.train.AdamOptimizer(0.00004).minimize(self.loss)
+        self.train_step = tf.train.AdamOptimizer(0.001).minimize(self.loss)
         
         correct_prediction = tf.equal(tf.arg_max(self.probs_category,1), tf.arg_max(category_,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
@@ -395,9 +395,9 @@ if __name__ == '__main__':
     #		f.write("\n")
                 if index % 20000 == 0:
                     saver = tf.train.Saver() 
-                    save_path = saver.save(sess, "./suffled/fine-tuning_4_"+str(index/20000)+".ckpt")
+                    save_path = saver.save(sess, "./suffled/fine-tuning_100_"+str(index/20000)+".ckpt")
 
         saver = tf.train.Saver() 
-        save_path = saver.save(sess, "./suffled/fine-tuning_4_"+str(index/20000)+".ckpt")
+        save_path = saver.save(sess, "./suffled/fine-tuning_100_"+str(index/20000)+".ckpt")
         list_eval.close()
         suffled.close()
