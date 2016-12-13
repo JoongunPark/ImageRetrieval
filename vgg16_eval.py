@@ -21,7 +21,7 @@ class vgg16:
         self.imgs = imgs
         self.convlayers()
         self.fc_layers()
-#        self.probs_attribute = tf.nn.sigmoid(self.fc4l1)
+        self.probs_attribute = tf.nn.sigmoid(self.fc4l1)
         self.probs_category = tf.nn.softmax(self.fc4l2)
 	self.trainning()
         if weights is not None and sess is not None:
@@ -250,15 +250,15 @@ class vgg16:
             self.fc3 = tf.nn.relu(fc3l)
             self.parameters += [fc3w, fc3b]
 	
-#        # fc4-1
-#        with tf.name_scope('fc41') as scope:
-#            fc4w1 = tf.Variable(tf.truncated_normal([48,1000],
-#                                                         dtype=tf.float32,
-#                                                         stddev=1e-1), name='weights')
-#            fc4b1 = tf.Variable(tf.constant(1.0, shape=[1000], dtype=tf.float32),
-#                                 trainable=True, name='biases')
-#            self.fc4l1 = tf.nn.bias_add(tf.matmul(self.fc3, fc4w1), fc4b1)
-#            self.parameters += [fc4w1, fc4b1]
+        # fc4-1
+        with tf.name_scope('fc41') as scope:
+            fc4w1 = tf.Variable(tf.truncated_normal([48,1000],
+                                                         dtype=tf.float32,
+                                                         stddev=1e-1), name='weights')
+            fc4b1 = tf.Variable(tf.constant(1.0, shape=[1000], dtype=tf.float32),
+                                 trainable=True, name='biases')
+            self.fc4l1 = tf.nn.bias_add(tf.matmul(self.fc3, fc4w1), fc4b1)
+            self.parameters += [fc4w1, fc4b1]
 
         # fc4-2
         with tf.name_scope('fc42') as scope:
@@ -276,7 +276,7 @@ class vgg16:
 	#initialize before load pretrained model
 
 	saver = tf.train.Saver()
-	saver.restore(sess, "fine-tunning-without-rate1.ckpt")
+	saver.restore(sess, "fine-tunning-suffler_0000045.ckpt")
 
 	print ('Load complete.')
 
@@ -296,10 +296,10 @@ class vgg16:
 	# for weight entropy
 	#cross_entropy2 = tf.contrib.losses.sigmoid_cross_entropy(self.probs_attribute, attribute_, attr_weight, label_smoothing=0,scope=None)
 	wneg = tf.constant(0.0033268346541)
-#	cross_entropy2 = tf.mul(tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(self.fc4l1, attribute_, 299.58602364)), wneg)
+	cross_entropy2 = tf.mul(tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(self.fc4l1, attribute_, 299.58602364)), wneg)
 
-	#self.loss = tf.add(cross_entropy, cross_entropy2) 
-	self.loss = cross_entropy
+	self.loss = tf.add(cross_entropy, cross_entropy2) 
+	#self.loss = cross_entropy2
 	
         self.train_step = tf.train.AdamOptimizer().minimize(self.loss)
         
@@ -362,7 +362,7 @@ if __name__ == '__main__':
     		except:
     		    break
     
-    		if imtype=="train":
+    		if imtype=="test":
 			
     		    img1 = Image.open(filename)
              	    img1 = img1.resize((224,224), Image.BILINEAR)

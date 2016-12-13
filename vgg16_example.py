@@ -272,19 +272,23 @@ class vgg16:
             self.parameters += [fc4w2, fc4b2]
 
     def load_weights(self, weight_file, sess):
-        weights = np.load(weight_file)
-        keys = sorted(weights.keys())
+#        weights = np.load(weight_file)
+#        keys = sorted(weights.keys())
 	print ('Load weights...')
     
 	#initialize before load pretrained model
-	sess.run(tf.initialize_all_variables())
+#	sess.run(tf.initialize_all_variables())
 
-        for i, k in enumerate(keys):
-	
-	    #remove f8 layer 
-	    if i > 29:
-	        break
-            sess.run(self.parameters[i].assign(weights[k]))
+#        for i, k in enumerate(keys):
+#	
+#	    #remove f8 layer 
+#	    if i > 29:
+#	        break
+#            sess.run(self.parameters[i].assign(weights[k]))
+
+        saver = tf.train.Saver()
+        saver.restore(sess, "fine-tunning-suffler_0000061.ckpt")
+
 	print ('Load complete.')
 
 
@@ -308,7 +312,7 @@ class vgg16:
 	self.loss = tf.add(cross_entropy, cross_entropy2) 
 	#self.loss = cross_entropy	
 
-        self.train_step = tf.train.AdamOptimizer(0.00005).minimize(self.loss)
+        self.train_step = tf.train.AdamOptimizer(0.00004).minimize(self.loss)
         
         correct_prediction = tf.equal(tf.arg_max(self.probs_category,1), tf.arg_max(category_,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
@@ -341,9 +345,12 @@ if __name__ == '__main__':
 #
 #    res = np.zeros((1, 4096))
 
+    suffler = 0#-1 
 
+    for e in range(2,100):
 
-    for e in range(1,100):
+	suffler += 1
+	suffler %= 20 	
 
         list_eval = open('deepfashion/list_eval_partition.txt', 'r')
         category = open('deepfashion/list_category_img.txt', 'r')
@@ -368,6 +375,7 @@ if __name__ == '__main__':
 #        parsed_category = category.readline().split()
 #        parsed_attribute = attribute.readline().split()
 #
+	train_counter = 0
         for index in range(0,num_images):
     
     		parsed_eval = list_eval.readline().split()
@@ -381,9 +389,11 @@ if __name__ == '__main__':
     		    break
     
     		if imtype=="train":
-		
-		    if random.random() < 0.95:
+		    
+		    train_counter+=1
+		    if train_counter % 20 != suffler:
 		        continue
+
 		    print index
 
     		    img1 = Image.open(filename)
@@ -451,5 +461,5 @@ if __name__ == '__main__':
 	attribute.close()
 
         saver = tf.train.Saver() 
-        save_path = saver.save(sess, "./fine-tunning-wit-rate000005"+str(e)+".ckpt")
+        save_path = saver.save(sess, "./fine-tunning-suffler_000004"+str(e)+".ckpt")
 	print str(e), "is done"
