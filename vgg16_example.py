@@ -241,54 +241,43 @@ class vgg16:
             self.fc2 = tf.nn.relu(fc2l)
             self.parameters += [fc2w, fc2b]
 
-        # fc3
-        with tf.name_scope('fc3') as scope:
-            fc3w = tf.Variable(tf.truncated_normal([4096, 48],
-                                                         dtype=tf.float32,
-                                                         stddev=1e-1), name='weights')
-            fc3b = tf.Variable(tf.constant(1.0, shape=[48], dtype=tf.float32),
-                                 trainable=True, name='biases')
-            fc3l = tf.nn.bias_add(tf.matmul(self.fc2, fc3w), fc3b)
-            self.fc3 = tf.nn.relu(fc3l)
-            self.parameters += [fc3w, fc3b]
-	
         # fc4-1
         with tf.name_scope('fc41') as scope:
-            fc4w1 = tf.Variable(tf.truncated_normal([48,1000],
+            fc4w1 = tf.Variable(tf.truncated_normal([4096,1000],
                                                          dtype=tf.float32,
                                                          stddev=1e-1), name='weights')
             fc4b1 = tf.Variable(tf.constant(1.0, shape=[1000], dtype=tf.float32),
                                  trainable=True, name='biases')
-            self.fc4l1 = tf.nn.bias_add(tf.matmul(self.fc3, fc4w1), fc4b1)
+            self.fc4l1 = tf.nn.bias_add(tf.matmul(self.fc2, fc4w1), fc4b1)
             self.parameters += [fc4w1, fc4b1]
 
         # fc4-2
         with tf.name_scope('fc42') as scope:
-            fc4w2 = tf.Variable(tf.truncated_normal([48,50],
+            fc4w2 = tf.Variable(tf.truncated_normal([4096,50],
                                                          dtype=tf.float32,
                                                          stddev=1e-1), name='weights')
             fc4b2 = tf.Variable(tf.constant(1.0, shape=[50], dtype=tf.float32),
                                  trainable=True, name='biases')
-            self.fc4l2 = tf.nn.bias_add(tf.matmul(self.fc3, fc4w2), fc4b2)
+            self.fc4l2 = tf.nn.bias_add(tf.matmul(self.fc2, fc4w2), fc4b2)
             self.parameters += [fc4w2, fc4b2]
 
     def load_weights(self, weight_file, sess):
-#        weights = np.load(weight_file)
-#        keys = sorted(weights.keys())
+        weights = np.load(weight_file)
+        keys = sorted(weights.keys())
 	print ('Load weights...')
     
 	#initialize before load pretrained model
-#	sess.run(tf.initialize_all_variables())
+	sess.run(tf.initialize_all_variables())
 
-#        for i, k in enumerate(keys):
-#	
-#	    #remove f8 layer 
-#	    if i > 29:
-#	        break
-#            sess.run(self.parameters[i].assign(weights[k]))
+        for i, k in enumerate(keys):
+	
+	    #remove f8 layer 
+            if i > 29:
+	        break
+            sess.run(self.parameters[i].assign(weights[k]))
 
-        saver = tf.train.Saver()
-        saver.restore(sess, "./suffled/fine-tuning_4_7.ckpt")
+#        saver = tf.train.Saver()
+#        saver.restore(sess, "./suffled/fine-tuning_10_sparse9.ckpt")
 
 	print ('Load complete.')
 
@@ -296,9 +285,6 @@ class vgg16:
     def trainning(self):
 
         #train step
-        #cross_entropy = -tf.reduce_sum(category_*tf.log(self.probs_category))
-        
-        #logits = tf.reshape(self.fc4l2, [1,50]) 
         self.category__ = tf.constant([0]) 
 	cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(self.fc4l1, self.category__))
         #cross_entorpy2 = -tf.reduce_sum(attribute_*tf.log(self.probs_attribute))
@@ -310,7 +296,7 @@ class vgg16:
 	self.loss = tf.add(cross_entropy, cross_entropy2) 
 	#self.loss = cross_entropy	
 
-        self.train_step = tf.train.AdamOptimizer(0.9).minimize(self.loss)
+        self.train_step = tf.train.AdamOptimizer(0.03).minimize(self.loss)
         
         correct_prediction = tf.equal(tf.arg_max(self.probs_category,1), tf.arg_max(category_,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
@@ -322,7 +308,7 @@ class vgg16:
         
 
     def evalImage(self, sess, img, category_label, attribute_label):
-        loss = self.accuracy.eval(session=sess, feed_dict={vgg.imgs: [img1],category_:category_label, attribute_:attribute_label})
+        loss = self.loss.eval(session=sess, feed_dict={vgg.imgs: [img1],category_:category_label, attribute_:attribute_label})
         return loss
 
 
@@ -338,12 +324,6 @@ if __name__ == '__main__':
     vgg = vgg16(imgs, 'vgg16_weights.npz', sess)
 
 
-    # Change dataset directory path
-#    data_dir = 'query'
-#    datalist = [join(data_dir, f) for f in listdir(data_dir)]
-#
-#    res = np.zeros((1, 4096))
-
     for e in range(0,8):
 
         list_eval = open('deepfashion/list_eval_partition.txt', 'r')
@@ -354,6 +334,7 @@ if __name__ == '__main__':
     
         accuracy = 0.0
         total = 0.0
+
         for index in range(0,num_images):
     
     		parsed_eval = suffled.readline().split()
@@ -365,9 +346,6 @@ if __name__ == '__main__':
     		    break
     
     		if imtype=="train":
-		    
-                    print index
-
     		    img1 = Image.open(filename)
              	    img1 = img1.resize((224,224), Image.BILINEAR)
         	    # Convert Image object to ndarray
@@ -376,9 +354,18 @@ if __name__ == '__main__':
     		    a = [0] * 50
     		    a[int(parsed_eval[2])-1] = 1
                     vgg.trainImage(sess, [img1], [a], [parsed_eval[3:1003]], int(parsed_eval[2]))
+
                 elif imtype=="val":	
-                    accuracy += vgg.evalImage(sess, [img1], [a], [parsed_eval[3:1003]])
-                    total += 1.0
+    		    img1 = Image.open(filename)
+             	    img1 = img1.resize((224,224), Image.BILINEAR)
+        	    # Convert Image object to ndarray
+        	    img1 = np.array(img1.getdata()).reshape(img1.size[0], img1.size[1], 3)
+    
+    		    a = [0] * 50
+    		    a[int(parsed_eval[2])-1] = 1
+                    loss = vgg.evalImage(sess, [img1], [a], [parsed_eval[3:1003]])
+                    print loss
+
     #		layer = sess.graph.get_tensor_by_name('fc2/Relu:0')
     #		layer2 = sess.graph.get_tensor_by_name('fc3/Relu:0')
     #
@@ -401,11 +388,11 @@ if __name__ == '__main__':
                 if index % 20000 == 0 and index!=0:
                     print index/20000, accuracy, total 
                     saver = tf.train.Saver() 
-                    save_path = saver.save(sess, "./suffled/fine-tuning_9000_sparse"+str(index/20000)+".ckpt")
+                    save_path = saver.save(sess, "./suffled/new"+str(index/20000)+".ckpt")
                     accuracy = 0.0
                     total = 0.0
 
         saver = tf.train.Saver() 
-        save_path = saver.save(sess, "./suffled/fine-tuning_9000_sparse_"+str(index/20000)+".ckpt")
+        save_path = saver.save(sess, "./suffled/new"+str(index/20000)+".ckpt")
         list_eval.close()
         suffled.close()

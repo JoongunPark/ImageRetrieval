@@ -276,16 +276,12 @@ class vgg16:
 	#initialize before load pretrained model
 
 	saver = tf.train.Saver()
-	saver.restore(sess, "fine-tunning-suffler_0000045.ckpt")
+	saver.restore(sess, "./suffled/fine-tuning_300_sparse3.ckpt")
 
 	print ('Load complete.')
 
 
     def trainning(self):
-
-        weight = open('attr_file.txt', 'r')
-	attr_weight = [float(i) for i in weight.readline().split()[1:1000]]
-	weight.close()
 
         #train step
         #cross_entropy = -tf.reduce_sum(category_*tf.log(self.probs_category))
@@ -303,7 +299,7 @@ class vgg16:
 	
         self.train_step = tf.train.AdamOptimizer().minimize(self.loss)
         
-        correct_prediction = tf.equal(tf.arg_max(self.probs_category,1), tf.arg_max(category_,1))
+        correct_prediction = tf.equal(tf.arg_max(self.probs_attribute,1), tf.arg_max(attribute_,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
 
     def trainImage(self, sess, batch1, batch2, batch3):
@@ -362,17 +358,16 @@ if __name__ == '__main__':
     		except:
     		    break
     
-    		if imtype=="test":
 			
-    		    img1 = Image.open(filename)
-             	    img1 = img1.resize((224,224), Image.BILINEAR)
-        	    # Convert Image object to ndarray
-        	    img1 = np.array(img1.getdata()).reshape(img1.size[0], img1.size[1], 3)
+    		img1 = Image.open(filename)
+             	img1 = img1.resize((224,224), Image.BILINEAR)
+        	# Convert Image object to ndarray
+        	img1 = np.array(img1.getdata()).reshape(img1.size[0], img1.size[1], 3)
     
-    		    a = [0] * 50
-    		    a[int(parsed_category[1])-1] = 1
+    		a = [0] * 50
+    		a[int(parsed_category[1])-1] = 1
     		
-                    vgg.evalImage(sess, img1, [a], [parsed_attribute[1:1001]])
+                vgg.evalImage(sess, img1, [a], [parsed_attribute[1:1001]])
     #		train_accuracy = accuracy.eval(feed_dict={vgg.imgs: [img1],y_:batch[1],keep_prob:1.0}) 
     #		print "step %d, training accuracy %g" % (i,train_accuracy) 
     
