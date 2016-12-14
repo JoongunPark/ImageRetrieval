@@ -276,7 +276,8 @@ class vgg16:
 	#initialize before load pretrained model
 
 	saver = tf.train.Saver()
-	saver.restore(sess, "fine-tunning-suffler_0000045.ckpt")
+	saver.restore(sess, "./suffled/fine-tuning_90000_3.ckpt")
+	#saver.restore(sess, "./fine-tuning_4_7.ckpt")
 
 	print ('Load complete.')
 
