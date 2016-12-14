@@ -248,52 +248,31 @@ class vgg16:
             self.fc2 = tf.nn.relu(fc2l)
             self.parameters += [fc2w, fc2b]
 
-        # fc3
-        with tf.name_scope('fc3') as scope:
-            fc3w = tf.Variable(tf.truncated_normal([4096, 48],
-                                                         dtype=tf.float32,
-                                                         stddev=1e-1), name='weights')
-            fc3b = tf.Variable(tf.constant(1.0, shape=[48], dtype=tf.float32),
-                                 trainable=True, name='biases')
-            fc3l = tf.nn.bias_add(tf.matmul(self.fc2, fc3w), fc3b)
-            self.fc3 = tf.nn.relu(fc3l)
-            self.parameters += [fc3w, fc3b]
-	
         # fc4-1
         with tf.name_scope('fc41') as scope:
-            fc4w1 = tf.Variable(tf.truncated_normal([48,1000],
+            fc4w1 = tf.Variable(tf.truncated_normal([4096,1000],
                                                          dtype=tf.float32,
                                                          stddev=1e-1), name='weights')
             fc4b1 = tf.Variable(tf.constant(1.0, shape=[1000], dtype=tf.float32),
                                  trainable=True, name='biases')
-            self.fc4l1 = tf.nn.bias_add(tf.matmul(self.fc3, fc4w1), fc4b1)
+            self.fc4l1 = tf.nn.bias_add(tf.matmul(self.fc2, fc4w1), fc4b1)
             self.parameters += [fc4w1, fc4b1]
 
         # fc4-2
         with tf.name_scope('fc42') as scope:
-            fc4w2 = tf.Variable(tf.truncated_normal([48,50],
+            fc4w2 = tf.Variable(tf.truncated_normal([4096,50],
                                                          dtype=tf.float32,
                                                          stddev=1e-1), name='weights')
             fc4b2 = tf.Variable(tf.constant(1.0, shape=[50], dtype=tf.float32),
                                  trainable=True, name='biases')
-            self.fc4l2 = tf.nn.bias_add(tf.matmul(self.fc3, fc4w2), fc4b2)
+            self.fc4l2 = tf.nn.bias_add(tf.matmul(self.fc2, fc4w2), fc4b2)
             self.parameters += [fc4w2, fc4b2]
 
     def load_weights(self, weight_file, sess):
 	print ('Load weights...')
     
-	#initialize before load pretrained model
-	#sess.run(tf.initialize_all_variables())
-
-        #for i, k in enumerate(keys):
-	
-	    #remove f8 layer 
-        #    if i > 29:
-	#        break
-        #    sess.run(self.parameters[i].assign(weights[k]))
-
         saver = tf.train.Saver()
-        saver.restore(sess, "./suffled/fine-tuning_300_sparse3.ckpt")
+        saver.restore(sess, "./suffled/new21.ckpt")
 
 	print ('Load complete.')
 
@@ -334,17 +313,13 @@ if __name__ == '__main__':
 
     vgg = vgg16(imgs, 'vgg16_weights.npz', sess)
 
-
-    # Change dataset directory path
-#    data_dir = 'query'
-#    datalist = [join(data_dir, f) for f in listdir(data_dir)]
-#
-#    res = np.zeros((1, 4096))
-
-    for e in range(0,8):
+    for e in range(0,1):
 
         list_eval = open('deepfashion/list_eval_partition.txt', 'r')
         suffled = open('deepfashion/suffled.txt', 'r')
+#	output = open('deepfashion/output.txt','w')
+
+	print "=*+*+*+*+*+*+*+*+*++*+*+*+*+*+*+*+*+*+*+"
     
         num_images = int(list_eval.readline().strip())
         list_eval.readline()
@@ -376,18 +351,9 @@ if __name__ == '__main__':
     #
     #		# Convert tensor variable into numpy array
     #		# It is 4096 dimension vector
-    		feature = np.array(_feature) 
-    		feature2 = np.array(_feature2) 
+    		fine_feature = np.array(_feature) 
+    		coarse_feature = np.array(_feature2) 
 
-                coarse_feat = []
-                #for f in feature[0]:
-                    
-#                    if sigmoid(f) <= 0.5:
-#                        coarse_feat.append(0)
-#                    else:
-#                        coarse_feat.append(1)
-
-                print feature2[0]
                 print "\n"
                 print "\n"
     		#print feature
